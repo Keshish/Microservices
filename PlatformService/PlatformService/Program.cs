@@ -1,20 +1,35 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using PlatformService.Data;
+using PlatformService.SyncDataServices.Http;
 
 namespace PlatformService
 {
     public class Program
     {
+
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
-            builder.Services.AddDbContext<AppDbContext>(option =>
-            option.UseInMemoryDatabase("InMem"));
+            if(builder.Environment.IsProduction())
+            {
+                Console.WriteLine("--> Using SQL server");
+
+                builder.Services.AddDbContext<AppDbContext>(option =>
+               option.UseSqlServer(builder.Configuration.GetConnectionString("PlatformConn")));
+            }
+            else
+            {
+                Console.WriteLine("--> Using InMem Db");
+                builder.Services.AddDbContext<AppDbContext>(option =>
+                option.UseInMemoryDatabase("InMem"));
+
+            }
 
             builder.Services.AddScoped<IPlatformRepo, PlatformRepo>();
+
+            builder.Services.AddHttpClient<ICommandDataClient, HttpCommandDataClient>();
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -31,7 +46,7 @@ namespace PlatformService
                            .AllowAnyMethod();
                 });
             });
-
+            Console.WriteLine($"--> CommandService Endpoint {builder.Configuration["CommandService"]}");
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -50,7 +65,7 @@ namespace PlatformService
 
             app.MapControllers();
 
-            PrepDb.PrepPopulation(app);
+            PrepDb.PrepPopulation(app, builder.Environment.IsProduction());
 
             app.Run();
         }
