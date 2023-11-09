@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.WebSockets;
 using Microsoft.EntityFrameworkCore;
+using PlatformService.AsyncDataServices;
 using PlatformService.Data;
 using PlatformService.SyncDataServices.Http;
 
@@ -12,12 +14,12 @@ namespace PlatformService
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            if(builder.Environment.IsProduction())
+            if (!builder.Environment.IsProduction())
             {
                 Console.WriteLine("--> Using SQL server");
+                builder.Services.AddDbContext<AppDbContext>(options =>
+            options.UseSqlServer(builder.Configuration.GetConnectionString("PlatformsConn")));
 
-                builder.Services.AddDbContext<AppDbContext>(option =>
-               option.UseSqlServer(builder.Configuration.GetConnectionString("PlatformConn")));
             }
             else
             {
@@ -30,6 +32,7 @@ namespace PlatformService
             builder.Services.AddScoped<IPlatformRepo, PlatformRepo>();
 
             builder.Services.AddHttpClient<ICommandDataClient, HttpCommandDataClient>();
+            builder.Services.AddSingleton<IMessageBusClient, MessageBusClient>(); 
 
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

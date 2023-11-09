@@ -1,3 +1,6 @@
+using CommandService.Data;
+using Microsoft.EntityFrameworkCore;
+
 namespace CommandService
 {
     public class Program
@@ -6,14 +9,14 @@ namespace CommandService
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
 
+            builder.Services.AddDbContext<AppDbContext>(opt=>opt.UseInMemoryDatabase("InMem"));
             builder.Services.AddControllers();
-            // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-           
+            builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+            builder.Services.AddScoped<ICommandRepo, CommandRepo>();
+
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
-
             builder.Services.AddCors(options =>
             {
                 options.AddPolicy("AllowInsomnia", builder =>
@@ -26,7 +29,6 @@ namespace CommandService
             var app = builder.Build();
 
 
-            // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
